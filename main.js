@@ -15,9 +15,10 @@ let lastTaskId = 2;
 let taskList;
 let addTask;
 let loggedIn = false;
+let token;
 
 // kui leht on brauseris laetud siis lisame esimesed taskid lehele
-window.addEventListener("load", () => {
+function taskRender(){
   taskList = document.querySelector("#task-list");
   addTask = document.querySelector("#add-task");
 
@@ -29,14 +30,16 @@ window.addEventListener("load", () => {
     const taskRow = createTaskRow(task); // Teeme uue taski HTML elementi mille saaks lehe peale listi lisada
     taskList.appendChild(taskRow); // Lisame taski lehele
   });
-});
+;
+}
+
 
 function renderTask(task) {
   const taskRow = createTaskRow(task);
   taskList.appendChild(taskRow);
 }
 
-function createTask() {
+/* function createTask() {
   lastTaskId++;
   const task = {
     id: lastTaskId,
@@ -45,7 +48,7 @@ function createTask() {
   };
   tasks.push(task);
   return task;
-}
+} */
 
 function createTaskRow(task) {
   let taskRow = document
@@ -116,7 +119,6 @@ function login() {
   // } else {
   //   console.log("Login value is null");
   // }
-
   var T = document.getElementById("logreg");
   var tasks = document.getElementById("taskdiv");
   const myHeaders = new Headers();
@@ -138,7 +140,7 @@ function login() {
     .then((response) => response.json())
     .then((response) => {
       if (response.access_token) {
-        var token = response.access_token;
+        token = response.access_token;
         console.log("We got a token");
         console.log(token);
         T.style.display = "none";
@@ -196,7 +198,7 @@ function registration() {
     .then((response) => response.json())
     .then((response) => {
       if (response.access_token) {
-        var token = response.access_token;
+        token = response.access_token;
         console.log("We got a token");
         console.log(response);
         T.style.display = "none";
@@ -224,18 +226,26 @@ function getTasks(token) {
 
   fetch("https://demo2.z-bit.ee/tasks", requestOptions)
     .then((response) => response.json())
-    .then((result) => console.log(result))
+    .then((result) => result.forEach(task => tasks.push({
+      id: task.id,
+      name: task.title,
+      completed: task.marked_as_done,
+    })))
+    .then(console.log(tasks))
     .catch((error) => console.error(error));
+
+    taskRender()
 }
 
-function createNewTask(token, title, desc) {
+function createTask() {
   const myHeaders = new Headers();
+  console.log(token)
   myHeaders.append("Content-Type", "application/json");
-  myHeaders.append("Authorization", "Bearer ${token}");
+  myHeaders.append("Authorization", "Bearer " + token);
 
   const raw = JSON.stringify({
-    title: title,
-    desc: desc,
+    title: "Task",
+    desc: "New task",
   });
 
   const requestOptions = {
