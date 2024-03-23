@@ -1,44 +1,35 @@
-const tasks = [
-  {
-    id: 1,
-    name: "Task 1",
-    completed: false,
-  },
-  {
-    id: 2,
-    name: "Task 2",
-    completed: true,
-  },
-];
-let lastTaskId = 2;
+let tasks = [];
+//let lastTaskId = 2;
 
 let taskList;
-let addTask;
 let loggedIn = false;
 let token;
 
 // kui leht on brauseris laetud siis lisame esimesed taskid lehele
-function taskRender(){
-  taskList = document.querySelector("#task-list");
-  addTask = document.querySelector("#add-task");
 
-  tasks.forEach(renderTask);
+// let addTask = document.querySelector("#add-task");
 
-  // kui nuppu vajutatakse siis lisatakse uus task
-  addTask.addEventListener("click", () => {
-    const task = createTask(); // Teeme kõigepealt lokaalsesse "andmebaasi" uue taski
-    const taskRow = createTaskRow(task); // Teeme uue taski HTML elementi mille saaks lehe peale listi lisada
-    taskList.appendChild(taskRow); // Lisame taski lehele
-  });
-;
-}
-
+// addTask.addEventListener("click", () => {
+//   const task = createTask(); // Teeme kõigepealt lokaalsesse "andmebaasi" uue taski
+//   const taskRow = createTaskRow(task); // Teeme uue taski HTML elementi mille saaks lehe peale listi lisada
+//   taskList.appendChild(taskRow); // Lisame taski lehele
+// });
 
 function renderTask(task) {
+  taskList = document.querySelector("#task-list");
   const taskRow = createTaskRow(task);
   taskList.appendChild(taskRow);
 }
 
+function removeTasksDOM(id) {
+  console.log(id);
+  try {
+    let element = document.getElementById(id);
+    element.remove();
+  } catch (err) {
+    console.log(err);
+  }
+}
 /* function createTask() {
   lastTaskId++;
   const task = {
@@ -51,22 +42,40 @@ function renderTask(task) {
 } */
 
 function createTaskRow(task) {
+  // tasks.forEach((task) => task.id);
+  // {
+  //   try {
+  //     let element = document.getElementById("id");
+  //     element.remove();
+  //   } catch (err) {
+  //     console.log("No elements to delete");
+  //   }
+  // }
   let taskRow = document
     .querySelector('[data-template="task-row"]')
     .cloneNode(true);
   taskRow.removeAttribute("data-template");
 
+  taskRow.setAttribute("id", task.id);
+
   // Täidame vormi väljad andmetega
   const name = taskRow.querySelector("[name='name']");
-  name.innerText = task.name;
+  name.addEventListener("input", () => {
+    console.log("text is changed");
+    updateTaskTitle(task.id, name.value, task.completed);
+  });
+  name.innerText = "New task";
 
   const checkbox = taskRow.querySelector("[name='completed']");
   checkbox.checked = task.completed;
+  checkbox.onclick = function () {
+    checkbox.checkbox = markAsDone(task.id, task.completed, name.value);
+    task.completed = !task.completed;
+  };
 
   const deleteButton = taskRow.querySelector(".delete-task");
   deleteButton.addEventListener("click", () => {
-    taskList.removeChild(taskRow);
-    tasks.splice(tasks.indexOf(task), 1);
+    deleteTask(task.id);
   });
 
   // Valmistame checkboxi ette vajutamiseks
@@ -75,14 +84,88 @@ function createTaskRow(task) {
   return taskRow;
 }
 
-function createAntCheckbox() {
-  const checkbox = document
-    .querySelector('[data-template="ant-checkbox"]')
-    .cloneNode(true);
-  checkbox.removeAttribute("data-template");
-  hydrateAntCheckboxes(checkbox);
-  return checkbox;
+function deleteTask(id) {
+  const myHeaders = new Headers();
+  myHeaders.append("Content-Type", "application/json");
+  myHeaders.append("Authorization", "Bearer " + token);
+
+  const requestOptions = {
+    method: "DELETE",
+    headers: myHeaders,
+    body: null,
+    redirect: "follow",
+  };
+
+  for (let i = 0; i < tasks.length; i++) {
+    console.log(tasks[i]);
+    if (tasks[i].id == id) {
+      console.log(tasks[i]);
+      removeTasksDOM(tasks[i].id);
+      tasks.splice(i, 1);
+      console.log(tasks);
+    }
+  }
+
+  fetch("https://demo2.z-bit.ee/tasks/" + id, requestOptions)
+    .then((response) => response.text())
+    .then((result) => console.log(result))
+    .catch((error) => console.error(error));
 }
+
+function markAsDone(id, checked, title) {
+  const myHeaders = new Headers();
+  myHeaders.append("Content-Type", "application/json");
+  myHeaders.append("Authorization", "Bearer " + token);
+  const raw = JSON.stringify({
+    title: title,
+    marked_as_done: !checked,
+  });
+
+  const requestOptions = {
+    method: "PUT",
+    headers: myHeaders,
+    body: raw,
+    redirect: "follow",
+  };
+
+  fetch("https://demo2.z-bit.ee/tasks/" + id, requestOptions)
+    .then((response) => response.text())
+    .then((result) => console.log(result))
+    .catch((error) => console.error(error));
+
+  return !checked;
+}
+
+function updateTaskTitle(id, title, checked) {
+  const myHeaders = new Headers();
+  myHeaders.append("Content-Type", "application/json");
+  myHeaders.append("Authorization", "Bearer " + token);
+  const raw = JSON.stringify({
+    title: title,
+    marked_as_done: checked,
+  });
+
+  const requestOptions = {
+    method: "PUT",
+    headers: myHeaders,
+    body: raw,
+    redirect: "follow",
+  };
+
+  fetch("https://demo2.z-bit.ee/tasks/" + id, requestOptions)
+    .then((response) => response.text())
+    .then((result) => console.log(result))
+    .catch((error) => console.error(error));
+}
+
+// function createAntCheckbox() {
+//   const checkbox = document
+//     .querySelector('[data-template="ant-checkbox"]')
+//     .cloneNode(true);
+//   checkbox.removeAttribute("data-template");
+//   hydrateAntCheckboxes(checkbox);
+//   return checkbox;
+// }
 
 /**
  * See funktsioon aitab lisada eridisainiga checkboxile vajalikud event listenerid
@@ -203,19 +286,27 @@ function registration() {
         console.log(response);
         T.style.display = "none";
         tasks.style.display = "block";
-        getTasks(response.access_token);
       } else {
         console.log("We did not get a token");
         throw "Enter correct data";
       }
     })
     .catch((error) => console.error(error));
+  getTasks(response.access_token);
 }
 
 function getTasks(token) {
   const myHeaders = new Headers();
   myHeaders.append("Content-Type", "application/json");
   myHeaders.append("Authorization", "Bearer " + token);
+
+  for (let i = 0; i < tasks.length; i++) {
+    try {
+      removeTasksDOM(tasks[i].id);
+    } catch (err) {
+      console.log(err);
+    }
+  }
 
   const requestOptions = {
     method: "GET",
@@ -226,25 +317,29 @@ function getTasks(token) {
 
   fetch("https://demo2.z-bit.ee/tasks", requestOptions)
     .then((response) => response.json())
-    .then((result) => result.forEach(task => tasks.push({
-      id: task.id,
-      name: task.title,
-      completed: task.marked_as_done,
-    })))
-    .then(console.log(tasks))
+    .then((result) => {
+      tasks = [];
+      result.forEach((task) => {
+        tasks.push({
+          id: task.id,
+          name: task.title,
+          completed: task.marked_as_done,
+        });
+      });
+      tasks.forEach((task) => renderTask(task));
+      console.log(tasks);
+    })
     .catch((error) => console.error(error));
-
-    taskRender()
 }
 
 function createTask() {
+  let newTask;
   const myHeaders = new Headers();
-  console.log(token)
   myHeaders.append("Content-Type", "application/json");
   myHeaders.append("Authorization", "Bearer " + token);
 
   const raw = JSON.stringify({
-    title: "Task",
+    title: "New task",
     desc: "New task",
   });
 
@@ -256,8 +351,18 @@ function createTask() {
   };
 
   fetch("https://demo2.z-bit.ee/tasks", requestOptions)
-    .then((response) => response.text())
-    .then((result) => console.log(result))
+    .then((response) => response.json())
+    .then((task) => {
+      newTask = {
+        id: task.id,
+        name: task.title,
+        completed: task.marked_as_done,
+      };
+      console.log(newTask);
+      console.log(task);
+      tasks.push(newTask);
+      renderTask(newTask);
+    })
     .catch((error) => console.error(error));
 }
 
