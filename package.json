@@ -4,11 +4,15 @@
   "scripts": {
     "test": "jest",
     "cypress:open": "cypress open",
-    "cypress:run": "cypress run"
+    "cypress:run": "cypress run",
+    "start": "live-server --port=5500"
   },
   "devDependencies": {
     "cypress": "^14.3.1",
     "jest": "^27.5.1",
     "wait-on": "^8.0.3"
+  },
+  "dependencies": {
+    "live-server": "^1.2.2"
   }
 }
