@@ -1,35 +1,39 @@
-# .github/workflows/ci-cd.yml
-name: CI/CD Pipeline
+# .github/workflows/main.yml
+name: CI with Cypress
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
-  build-and-deploy:
+  cypress-run:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Set up Node.js (example)
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18" # Or whatever version you’re using
 
-    - name: Install dependencies
-      run: npm install
+      - name: Install dependencies
+        run: npm ci # or npm install
 
-    - name: Run tests
-      run: npm test
+      - name: Start your web app
+        run: npm run start &
+        env:
+          CI: true
 
-    - name: Build project
-      run: npm run build
+      - name: Wait for app to be ready
+        run: npx wait-on http://localhost:3000 # or your app's port
 
-    - name: Deploy (optional)
-      run: |
-        echo "Deploying..." 
-        # Add deploy script here
+      - name: Run Cypress tests
+        uses: cypress-io/github-action@v6
+        with:
+          start: npm start
+          wait-on: "http://localhost:3000"
+          wait-on-timeout: 60 # seconds
