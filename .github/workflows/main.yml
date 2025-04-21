@@ -29,7 +29,7 @@ jobs:
           CI: true
 
       - name: Wait for app to be ready
-        run: npx wait-on http://localhost:5500
+        run: npx wait-on http://localhost:5500 && npm test
 
       - name: Run Cypress tests
         uses: cypress-io/github-action@v6
